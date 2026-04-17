@@ -1,0 +1,46 @@
+# Entorno virtual
+venv/
+env/
+.env
+
+# Modelo entrenado (muy pesado para git)
+cat_recognition/models/*.h5
+cat_recognition/models/*.keras
+
+# Historial de predicciones (datos locales)
+cat_recognition/historial/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Jupyter / Colab
+.ipynb_checkpoints/
+*.ipynb
+
+# Imágenes temporales y capturas
+*.jpg
+*.jpeg
+*.png
+*.bmp
+*.gif
+!cat_recognition/static/**
+
+# Datasets (demasiado pesados)
+data/
+datasets/
+
+# Logs
+logs/
+*.log
+tensorboard_logs/
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
+desktop.ini

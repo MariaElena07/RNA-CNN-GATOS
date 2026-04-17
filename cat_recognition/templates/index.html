@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cat Recognizer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f13;
+      color: #e8e8e8;
+      min-height: 100vh;
+    }
+
+    /* ── Nav ── */
+    nav {
+      background: #1a1a24;
+      border-bottom: 1px solid #2a2a3a;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      height: 56px;
+    }
+    .nav-logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #a78bfa;
+      margin-right: auto;
+    }
+    .nav-tab {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 0.9rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-tab:hover { color: #e8e8e8; background: #2a2a3a; }
+    .nav-tab.active { color: #a78bfa; background: #2a1f4a; }
+
+    /* ── Layout ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── Upload page ── */
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    @media (max-width: 700px) { .upload-grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: #1a1a24;
+      border: 1px solid #2a2a3a;
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+    .card h2 { font-size: 1rem; color: #a78bfa; margin-bottom: 1rem; }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 2px dashed #3a3a50;
+      border-radius: 10px;
+      padding: 2.5rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: #a78bfa;
+      background: #1f1f30;
+    }
+    .drop-zone p { color: #666; font-size: 0.9rem; margin-top: 0.5rem; }
+    .drop-icon { font-size: 2.5rem; }
+
+    .btn {
+      background: #6d28d9;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.4rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s;
+      margin-top: 1rem;
+    }
+    .btn:hover { background: #7c3aed; }
+    .btn:disabled { background: #3a3a50; cursor: not-allowed; }
+    .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.82rem; margin-top: 0; }
+
+    /* Preview */
+    #preview-img {
+      width: 100%;
+      border-radius: 8px;
+      display: none;
+      margin-top: 1rem;
+      max-height: 280px;
+      object-fit: cover;
+    }
+
+    /* Result */
+    .result-box { display: none; }
+
+    .raza-badge {
+      display: inline-block;
+      background: #2a1f4a;
+      color: #a78bfa;
+      border: 1px solid #6d28d9;
+      border-radius: 8px;
+      padding: 0.5rem 1.2rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+    }
+    .mestizo-badge {
+      background: #1f2a1f;
+      color: #6ee7b7;
+      border-color: #059669;
+    }
+
+    .conf-label { font-size: 0.82rem; color: #888; margin-bottom: 0.3rem; }
+    .conf-bar-wrap {
+      background: #2a2a3a;
+      border-radius: 20px;
+      height: 10px;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+    .conf-bar {
+      height: 100%;
+      border-radius: 20px;
+      background: linear-gradient(90deg, #6d28d9, #a78bfa);
+      transition: width 0.6s ease;
+    }
+
+    .top3-item {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }
+    .top3-name { min-width: 130px; color: #ccc; }
+    .top3-bar-wrap {
+      flex: 1;
+      background: #2a2a3a;
+      border-radius: 20px;
+      height: 7px;
+      overflow: hidden;
+    }
+    .top3-bar { height: 100%; border-radius: 20px; background: #4c1d95; }
+    .top3-pct { min-width: 40px; text-align: right; color: #888; }
+
+    .nota-mestizo {
+      background: #1a2a1a;
+      border-left: 3px solid #059669;
+      border-radius: 0 6px 6px 0;
+      padding: 0.6rem 0.9rem;
+      font-size: 0.83rem;
+      color: #6ee7b7;
+      margin-top: 0.8rem;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: #666;
+      display: none;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #2a2a3a;
+      border-top-color: #a78bfa;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 0.8rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Camara page ── */
+    .camara-wrap { position: relative; display: inline-block; }
+    #camara-video {
+      width: 100%;
+      max-width: 640px;
+      border-radius: 10px;
+      background: #0a0a10;
+      display: block;
+    }
+    #camara-canvas { display: none; }
+    #overlay-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border-radius: 10px;
+      pointer-events: none;
+    }
+    .camara-result {
+      background: #1a1a24;
+      border: 1px solid #2a2a3a;
+      border-radius: 10px;
+      padding: 1rem 1.5rem;
+      margin-top: 1rem;
+      min-height: 80px;
+    }
+    .camara-controles { margin-top: 1rem; display: flex; gap: 0.8rem; }
+
+    /* ── Historial page ── */
+    .historial-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .hist-card {
+      background: #1a1a24;
+      border: 1px solid #2a2a3a;
+      border-radius: 10px;
+      padding: 1rem;
+      font-size: 0.85rem;
+    }
+    .hist-raza { font-weight: 700; color: #a78bfa; margin-bottom: 0.3rem; }
+    .hist-conf { color: #888; }
+    .hist-fecha { color: #555; font-size: 0.75rem; margin-top: 0.4rem; }
+    .hist-tipo {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.1rem 0.5rem;
+      border-radius: 4px;
+      margin-top: 0.3rem;
+    }
+    .hist-tipo.raza_pura { background: #2a1f4a; color: #a78bfa; }
+    .hist-tipo.mestizo    { background: #1f2a1f; color: #6ee7b7; }
+
+    /* ── Comparar page ── */
+    .comparar-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+    @media (max-width: 600px) { .comparar-grid { grid-template-columns: 1fr; } }
+
+    .empty-state {
+      text-align: center;
+      color: #444;
+      padding: 3rem;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Cat Recognizer</div>
+  <button class="nav-tab active" onclick="mostrarPagina('subir')">Subir imagen</button>
+  <button class="nav-tab" onclick="mostrarPagina('camara')">Camara en vivo</button>
+  <button class="nav-tab" onclick="mostrarPagina('historial'); cargarHistorial()">Historial</button>
+  <button class="nav-tab" onclick="mostrarPagina('comparar')">Comparar</button>
+</nav>
+
+<div class="container">
+
+  <!-- ══ PÁGINA: SUBIR IMAGEN ══ -->
+  <div id="page-subir" class="page active">
+    <div class="upload-grid">
+
+      <!-- Zona de subida -->
+      <div class="card">
+        <h2>Sube una foto de tu gato</h2>
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <div class="drop-icon">🐱</div>
+          <p>Arrastra una imagen aquí<br>o haz clic para buscar</p>
+        </div>
+        <input type="file" id="file-input" accept="image/*" style="display:none" onchange="manejarArchivo(this.files[0])">
+        <img id="preview-img" alt="preview">
+        <button class="btn" id="btn-predecir" onclick="enviarImagen()" disabled>Analizar</button>
+      </div>
+
+      <!-- Resultado -->
+      <div class="card">
+        <h2>Resultado</h2>
+
+        <div class="loading" id="loading">
+          <div class="spinner"></div>
+          Analizando...
+        </div>
+
+        <div class="result-box" id="result-box">
+          <div id="raza-badge" class="raza-badge"></div>
+          <div class="conf-label">Confianza: <span id="conf-pct"></span>%</div>
+          <div class="conf-bar-wrap">
+            <div class="conf-bar" id="conf-bar" style="width:0%"></div>
+          </div>
+
+          <div class="conf-label" style="margin-top:0.5rem">Top razas:</div>
+          <div id="top3-lista"></div>
+
+          <div class="nota-mestizo" id="nota-mestizo" style="display:none"></div>
+        </div>
+
+        <div class="empty-state" id="empty-result">
+          Sube una imagen para ver el resultado aqui
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PÁGINA: CÁMARA ══ -->
+  <div id="page-camara" class="page">
+    <div class="card" style="margin-top:1rem">
+      <h2>Camara en vivo</h2>
+      <div class="camara-wrap">
+        <video id="camara-video" autoplay playsinline></video>
+        <canvas id="camara-canvas"></canvas>
+        <canvas id="overlay-canvas"></canvas>
+      </div>
+      <div class="camara-controles">
+        <button class="btn" onclick="iniciarCamara()">Iniciar camara</button>
+        <button class="btn" id="btn-toggle-analisis" onclick="toggleAnalisis()" disabled>Iniciar analisis</button>
+        <button class="btn" style="background:#3a1a1a" onclick="detenerCamara()">Detener</button>
+      </div>
+      <div class="camara-result" id="camara-result">
+        <span style="color:#444">Inicia la camara y el analisis para ver resultados aqui...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ PÁGINA: HISTORIAL ══ -->
+  <div id="page-historial" class="page">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem">
+      <h2 style="color:#a78bfa">Historial de predicciones</h2>
+      <button class="btn btn-sm" onclick="limpiarHistorial()">Limpiar</button>
+    </div>
+    <div class="historial-grid" id="historial-grid">
+      <div class="empty-state">Cargando historial...</div>
+    </div>
+  </div>
+
+  <!-- ══ PÁGINA: COMPARAR ══ -->
+  <div id="page-comparar" class="page">
+    <div class="comparar-grid" style="margin-top:1rem">
+
+      <div class="card">
+        <h2>Gato A</h2>
+        <div class="drop-zone" onclick="document.getElementById('file-a').click()">
+          <div class="drop-icon">🐱</div>
+          <p>Sube imagen del gato A</p>
+        </div>
+        <input type="file" id="file-a" accept="image/*" style="display:none" onchange="manejarComparar('a', this.files[0])">
+        <img id="preview-a" style="width:100%;border-radius:8px;display:none;margin-top:1rem;max-height:200px;object-fit:cover">
+        <div id="result-a" style="margin-top:1rem"></div>
+      </div>
+
+      <div class="card">
+        <h2>Gato B</h2>
+        <div class="drop-zone" onclick="document.getElementById('file-b').click()">
+          <div class="drop-icon">🐱</div>
+          <p>Sube imagen del gato B</p>
+        </div>
+        <input type="file" id="file-b" accept="image/*" style="display:none" onchange="manejarComparar('b', this.files[0])">
+        <img id="preview-b" style="width:100%;border-radius:8px;display:none;margin-top:1rem;max-height:200px;object-fit:cover">
+        <div id="result-b" style="margin-top:1rem"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── Navegación ────────────────────────────────────────────────
+function mostrarPagina(nombre) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + nombre).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ── SUBIR IMAGEN ─────────────────────────────────────────────
+let archivoActual = null;
+
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) manejarArchivo(e.dataTransfer.files[0]);
+});
+
+function manejarArchivo(archivo) {
+  if (!archivo) return;
+  archivoActual = archivo;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('preview-img');
+    img.src = e.target.result;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(archivo);
+  document.getElementById('btn-predecir').disabled = false;
+  document.getElementById('result-box').style.display = 'none';
+  document.getElementById('empty-result').style.display = 'block';
+}
+
+async function enviarImagen() {
+  if (!archivoActual) return;
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('result-box').style.display = 'none';
+  document.getElementById('empty-result').style.display = 'none';
+  document.getElementById('btn-predecir').disabled = true;
+
+  const form = new FormData();
+  form.append('imagen', archivoActual);
+
+  try {
+    const res  = await fetch('/predecir', { method: 'POST', body: form });
+    const data = await res.json();
+
+    if (data.error) { alert('Error: ' + data.error); return; }
+    mostrarResultado(data);
+  } catch(e) {
+    alert('Error de conexión con el servidor.');
+  } finally {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('btn-predecir').disabled = false;
+  }
+}
+
+function mostrarResultado(data) {
+  const badge = document.getElementById('raza-badge');
+  badge.textContent = data.raza;
+  badge.className   = 'raza-badge' + (data.tipo === 'mestizo' ? ' mestizo-badge' : '');
+
+  document.getElementById('conf-pct').textContent = data.confianza;
+  document.getElementById('conf-bar').style.width = data.confianza + '%';
+
+  // Top 3
+  const lista = document.getElementById('top3-lista');
+  lista.innerHTML = (data.top3 || []).map(r => `
+    <div class="top3-item">
+      <span class="top3-name">${r.raza}</span>
+      <div class="top3-bar-wrap"><div class="top3-bar" style="width:${r.confianza}%"></div></div>
+      <span class="top3-pct">${r.confianza}%</span>
+    </div>
+  `).join('');
+
+  // Nota mestizo
+  const notaEl = document.getElementById('nota-mestizo');
+  if (data.tipo === 'mestizo' && data.nota) {
+    notaEl.textContent = data.nota;
+    notaEl.style.display = 'block';
+  } else {
+    notaEl.style.display = 'none';
+  }
+
+  document.getElementById('result-box').style.display = 'block';
+  document.getElementById('empty-result').style.display = 'none';
+}
+
+// ── CÁMARA ───────────────────────────────────────────────────
+let streamCamara   = null;
+let analizando     = false;
+let intervaloAnali = null;
+
+async function iniciarCamara() {
+  try {
+    streamCamara = await navigator.mediaDevices.getUserMedia({ video: true });
+    document.getElementById('camara-video').srcObject = streamCamara;
+    document.getElementById('btn-toggle-analisis').disabled = false;
+  } catch(e) {
+    alert('No se pudo acceder a la cámara: ' + e.message);
+  }
+}
+
+function toggleAnalisis() {
+  analizando = !analizando;
+  const btn  = document.getElementById('btn-toggle-analisis');
+  btn.textContent = analizando ? 'Detener analisis' : 'Iniciar analisis';
+  btn.style.background = analizando ? '#1a3a1a' : '#6d28d9';
+
+  if (analizando) {
+    intervaloAnali = setInterval(analizarFrame, 1500);
+  } else {
+    clearInterval(intervaloAnali);
+    document.getElementById('camara-result').innerHTML =
+      '<span style="color:#444">Analisis detenido</span>';
+  }
+}
+
+async function analizarFrame() {
+  const video  = document.getElementById('camara-video');
+  const canvas = document.getElementById('camara-canvas');
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const frameB64 = canvas.toDataURL('image/jpeg', 0.8);
+
+  try {
+    const res  = await fetch('/camara_predecir', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ frame: frameB64 })
+    });
+    const data = await res.json();
+    mostrarResultadoCamara(data);
+    dibujarBox(data);
+  } catch(e) { /* silencioso */ }
+}
+
+function mostrarResultadoCamara(data) {
+  const el = document.getElementById('camara-result');
+  if (!data.gato_detectado || data.tipo === 'sin_gato') {
+    el.innerHTML = '<span style="color:#555">Buscando gato en el frame...</span>';
+    return;
+  }
+  const color = data.tipo === 'mestizo' ? '#6ee7b7' : '#a78bfa';
+  el.innerHTML = `
+    <span style="color:${color};font-weight:700;font-size:1.1rem">${data.raza}</span>
+    <span style="color:#888;margin-left:1rem">${data.confianza}% confianza</span>
+    ${data.tipo === 'mestizo' && data.nota ? `<div style="color:#6ee7b7;font-size:0.82rem;margin-top:0.4rem">${data.nota}</div>` : ''}
+    <div style="margin-top:0.6rem">
+      ${(data.top3 || []).map(r => `
+        <div class="top3-item">
+          <span class="top3-name">${r.raza}</span>
+          <div class="top3-bar-wrap"><div class="top3-bar" style="width:${r.confianza}%"></div></div>
+          <span class="top3-pct">${r.confianza}%</span>
+        </div>`).join('')}
+    </div>`;
+}
+
+function dibujarBox(data) {
+  const overlay = document.getElementById('overlay-canvas');
+  const video   = document.getElementById('camara-video');
+  overlay.width  = video.offsetWidth;
+  overlay.height = video.offsetHeight;
+  const ctx = overlay.getContext('2d');
+  ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+  if (data.box && data.gato_detectado) {
+    const scaleX = overlay.width  / video.videoWidth;
+    const scaleY = overlay.height / video.videoHeight;
+    const { x, y, w, h } = data.box;
+    ctx.strokeStyle = data.tipo === 'mestizo' ? '#6ee7b7' : '#a78bfa';
+    ctx.lineWidth   = 2;
+    ctx.strokeRect(x * scaleX, y * scaleY, w * scaleX, h * scaleY);
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.font = '14px Segoe UI';
+    ctx.fillText(data.raza, x * scaleX + 4, y * scaleY - 6);
+  }
+}
+
+function detenerCamara() {
+  if (streamCamara) { streamCamara.getTracks().forEach(t => t.stop()); streamCamara = null; }
+  if (intervaloAnali) { clearInterval(intervaloAnali); analizando = false; }
+  document.getElementById('btn-toggle-analisis').disabled = true;
+  document.getElementById('btn-toggle-analisis').textContent = 'Iniciar analisis';
+  document.getElementById('btn-toggle-analisis').style.background = '#6d28d9';
+  document.getElementById('camara-result').innerHTML = '<span style="color:#444">Camara detenida</span>';
+  const ctx = document.getElementById('overlay-canvas').getContext('2d');
+  ctx.clearRect(0, 0, 9999, 9999);
+}
+
+// ── HISTORIAL ────────────────────────────────────────────────
+async function cargarHistorial() {
+  const grid = document.getElementById('historial-grid');
+  grid.innerHTML = '<div class="empty-state">Cargando...</div>';
+  try {
+    const res  = await fetch('/historial');
+    const data = await res.json();
+    if (!data.length) {
+      grid.innerHTML = '<div class="empty-state">Aun no hay predicciones guardadas</div>';
+      return;
+    }
+    grid.innerHTML = data.map(h => `
+      <div class="hist-card">
+        <div class="hist-raza">${h.raza}</div>
+        <div class="hist-conf">${h.confianza}% confianza</div>
+        <span class="hist-tipo ${h.tipo}">${h.tipo === 'mestizo' ? 'Mestizo' : 'Raza pura'}</span>
+        <div class="hist-fecha">${h.fecha}</div>
+      </div>`).join('');
+  } catch(e) {
+    grid.innerHTML = '<div class="empty-state">Error al cargar historial</div>';
+  }
+}
+
+async function limpiarHistorial() {
+  if (!confirm('¿Borrar todo el historial?')) return;
+  await fetch('/historial', { method: 'DELETE' }).catch(() => {});
+  cargarHistorial();
+}
+
+// ── COMPARAR ─────────────────────────────────────────────────
+async function manejarComparar(lado, archivo) {
+  if (!archivo) return;
+  const img = document.getElementById('preview-' + lado);
+  img.src = URL.createObjectURL(archivo);
+  img.style.display = 'block';
+
+  const resultEl = document.getElementById('result-' + lado);
+  resultEl.innerHTML = '<div style="color:#666;font-size:0.85rem">Analizando...</div>';
+
+  const form = new FormData();
+  form.append('imagen', archivo);
+
+  try {
+    const res  = await fetch('/predecir', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.error) { resultEl.innerHTML = '<span style="color:red">Error</span>'; return; }
+
+    const color = data.tipo === 'mestizo' ? '#6ee7b7' : '#a78bfa';
+    resultEl.innerHTML = `
+      <div style="color:${color};font-weight:700;font-size:1.05rem;margin-bottom:0.5rem">${data.raza}</div>
+      <div style="color:#888;font-size:0.85rem;margin-bottom:0.6rem">${data.confianza}% confianza</div>
+      ${(data.top3 || []).map(r => `
+        <div class="top3-item">
+          <span class="top3-name">${r.raza}</span>
+          <div class="top3-bar-wrap"><div class="top3-bar" style="width:${r.confianza}%"></div></div>
+          <span class="top3-pct">${r.confianza}%</span>
+        </div>`).join('')}
+      ${data.tipo === 'mestizo' && data.nota ? `<div class="nota-mestizo">${data.nota}</div>` : ''}`;
+  } catch(e) {
+    resultEl.innerHTML = '<span style="color:red">Error de conexion</span>';
+  }
+}
+</script>
+</body>
+</html>

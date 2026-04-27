@@ -9,6 +9,8 @@ Cómo correr:
 """
 
 import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 import json
 import base64
 import datetime
@@ -21,7 +23,7 @@ import cv2
 
 # ── Configuración ──────────────────────────────────────────────
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH    = os.path.join("models/best_model.keras", compile=False)
+MODEL_PATH    = os.path.join(BASE_DIR, 'models', 'best_model.keras')
 NAMES_PATH    = os.path.join(BASE_DIR, 'models', 'class_names.npy')
 HISTORIAL_PATH= os.path.join(BASE_DIR, 'historial', 'historial.json')
 IMG_SIZE      = 224
@@ -31,9 +33,14 @@ app = Flask(__name__)
 
 # ── Cargar modelo y clases al iniciar ──────────────────────────
 print("Cargando modelo...")
-model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+import json
+with open(os.path.join(BASE_DIR, 'models', 'arquitectura.json'), 'r') as f:
+    model = tf.keras.models.model_from_json(f.read())
+model.load_weights(os.path.join(BASE_DIR, 'models', 'pesos.weights.h5'))
+print("Modelo cargado OK")
 class_names = np.load(NAMES_PATH, allow_pickle=True).tolist()
-print(f"Modelo listo — {len(class_names)} razas: {class_names}")
+print(f"Modelo listo — {len(class_names)} razas")
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # Detector de gatos con Haar Cascades (incluido en OpenCV)
 CASCADE_PATH = cv2.data.haarcascades + 'haarcascade_frontalcatface.xml'
@@ -226,7 +233,7 @@ def ruta_clases():
     """Devuelve las clases disponibles."""
     return jsonify(class_names)
 
-
+print("DEBUG: llegué al final del archivo")
 # ── Iniciar servidor ───────────────────────────────────────────
 if __name__ == '__main__':
     print("\n" + "="*50)
@@ -234,3 +241,4 @@ if __name__ == '__main__':
     print("  Abre tu navegador en: http://localhost:5000")
     print("="*50 + "\n")
     app.run(debug=True, host='0.0.0.0', port=5000)
+    

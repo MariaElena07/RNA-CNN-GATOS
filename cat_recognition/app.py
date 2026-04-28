@@ -23,8 +23,8 @@ import cv2
 
 # ── Configuración ──────────────────────────────────────────────
 BASE_DIR      = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH    = os.path.join(BASE_DIR, 'models', 'best_model.keras')
-NAMES_PATH    = os.path.join(BASE_DIR, 'models', 'class_names.npy')
+MODEL_PATH    = os.path.join(BASE_DIR, 'models', 'best_model_v3.keras')
+NAMES_PATH    = os.path.join(BASE_DIR, 'models', 'class_names_v3.npy')
 HISTORIAL_PATH= os.path.join(BASE_DIR, 'historial', 'historial.json')
 IMG_SIZE      = 224
 UMBRAL        = 0.70   # Por debajo de esto → mestizo

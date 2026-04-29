@@ -58,47 +58,49 @@ def preprocesar_imagen(img_pil):
 
 
 def predecir(imagen_pil):
-    """
-    Predice la raza del gato en la imagen.
-    - Si confianza >= UMBRAL → devuelve raza
-    - Si confianza < UMBRAL  → devuelve perfil de mezcla
-    """
     tensor = preprocesar_imagen(imagen_pil)
     probs  = model.predict(tensor, verbose=0)[0]
 
-    idx_top    = int(np.argmax(probs))
-    conf_top   = float(probs[idx_top])
+    idx_top  = int(np.argmax(probs))
+    conf_top = float(probs[idx_top])
+    clase    = class_names[idx_top]
 
-    # Top 3 razas siempre
+    # --- LÍNEA DE DEBUG: Mira tu terminal cuando subas la moto ---
+    print(f"DEBUG: Clase ganadora='{clase}' con {conf_top*100:.1f}%")
+    # -------------------------------------------------------------
+
     top3_idx = np.argsort(probs)[::-1][:3]
     top3 = [
         {'raza': class_names[i], 'confianza': round(float(probs[i]) * 100, 1)}
         for i in top3_idx
     ]
 
-    # Todas las razas para el gráfico de barras
-    todas = [
-        {'raza': class_names[i], 'confianza': round(float(probs[i]) * 100, 1)}
-        for i in np.argsort(probs)[::-1]
-    ]
+    # 1. SI LA CLASE GANADORA ES "no_gato"
+    if clase == 'no_gato':
+        return {
+            'tipo': 'no_gato',
+            'raza': 'No es un gato',
+            'confianza': round(conf_top * 100, 1),
+            'top3': top3
+        }
 
+    # 2. SI ES UN GATO Y SUPERA EL UMBRAL
     if conf_top >= UMBRAL:
         return {
-            'tipo':      'raza_pura',
-            'raza':      class_names[idx_top],
+            'tipo': 'raza_pura',
+            'raza': clase,
             'confianza': round(conf_top * 100, 1),
-            'top3':      top3,
-            'todas':     todas
+            'top3': top3
         }
-    else:
-        return {
-            'tipo':      'mestizo',
-            'raza':      'Mestizo',
-            'confianza': round(conf_top * 100, 1),
-            'nota':      f"Podría tener rasgos de {top3[0]['raza']} y {top3[1]['raza']}",
-            'top3':      top3,
-            'todas':     todas
-        }
+
+    # 3. SI ES UN GATO PERO NO ESTÁ SEGURO (MESTIZO)
+    return {
+        'tipo': 'mestizo',
+        'raza': 'Mestizo',
+        'confianza': round(conf_top * 100, 1),
+        'nota': f"Podría tener rasgos de {top3[0]['raza']} y {top3[1]['raza']}",
+        'top3': top3
+    }
 
 
 def guardar_historial(resultado, imagen_b64):

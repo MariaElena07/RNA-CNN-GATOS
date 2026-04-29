@@ -126,6 +126,11 @@
       color: #6ee7b7;
       border-color: #059669;
     }
+    .nogato-badge {
+      background: #2a1a1a;
+      color: #f87171;
+      border-color: #dc2626;
+    }
 
     .conf-label { font-size: 0.82rem; color: #888; margin-bottom: 0.3rem; }
     .conf-bar-wrap {
@@ -440,7 +445,9 @@ async function enviarImagen() {
 function mostrarResultado(data) {
   const badge = document.getElementById('raza-badge');
   badge.textContent = data.raza;
-  badge.className   = 'raza-badge' + (data.tipo === 'mestizo' ? ' mestizo-badge' : '');
+  badge.className = 'raza-badge' + 
+    (data.tipo === 'mestizo' ? ' mestizo-badge' : '') +
+    (data.tipo === 'no_gato' ? ' nogato-badge' : '');
 
   document.getElementById('conf-pct').textContent = data.confianza;
   document.getElementById('conf-bar').style.width = data.confianza + '%';

@@ -33,10 +33,7 @@ app = Flask(__name__)
 
 # ── Cargar modelo y clases al iniciar ──────────────────────────
 print("Cargando modelo...")
-import json
-with open(os.path.join(BASE_DIR, 'models', 'arquitectura.json'), 'r') as f:
-    model = tf.keras.models.model_from_json(f.read())
-model.load_weights(os.path.join(BASE_DIR, 'models', 'pesos.weights.h5'))
+model = tf.keras.models.load_model(MODEL_PATH)
 print("Modelo cargado OK")
 class_names = np.load(NAMES_PATH, allow_pickle=True).tolist()
 print(f"Modelo listo — {len(class_names)} razas")
@@ -162,14 +159,14 @@ def ruta_predecir():
         hay_gato, boxes = detectar_gato_opencv(imagen_pil)
 
         # Si detectó gato, recortar esa zona para mejor precisión
-        if hay_gato and len(boxes) > 0:
-            x, y, w, h = boxes[0]
-            margen = 20
-            x0 = max(0, x - margen)
-            y0 = max(0, y - margen)
-            x1 = min(imagen_pil.width,  x + w + margen)
-            y1 = min(imagen_pil.height, y + h + margen)
-            imagen_pil = imagen_pil.crop((x0, y0, x1, y1))
+        # if hay_gato and len(boxes) > 0:
+        #     x, y, w, h = boxes[0]
+        #     margen = 20
+        #     x0 = max(0, x - margen)
+        #     y0 = max(0, y - margen)
+        #     x1 = min(imagen_pil.width,  x + w + margen)
+        #     y1 = min(imagen_pil.height, y + h + margen)
+        #     imagen_pil = imagen_pil.crop((x0, y0, x1, y1))
 
         resultado = predecir(imagen_pil)
         resultado['gato_detectado'] = bool(hay_gato)
@@ -187,9 +184,14 @@ def ruta_predecir():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/historial')
+@app.route('/historial', methods=['GET', 'DELETE'])
 def ruta_historial():
-    """Devuelve el historial de predicciones."""
+    """Devuelve o borra el historial de predicciones."""
+    if request.method == 'DELETE':
+        if os.path.exists(HISTORIAL_PATH):
+            os.remove(HISTORIAL_PATH)
+        return jsonify({'ok': True})
+    
     if not os.path.exists(HISTORIAL_PATH):
         return jsonify([])
     with open(HISTORIAL_PATH, 'r') as f:
